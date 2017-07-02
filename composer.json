@@ -1,0 +1,7 @@
+{
+    "require": {
+        "linecorp/line-bot-sdk": "^2.1",
+        "fabpot/goutte": "^3.2",
+        "ext-gd": "^0.0.0"
+    }
+}
