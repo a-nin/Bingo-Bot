@@ -66,6 +66,21 @@ foreach ($events as $event) {
         replyTextMessage($bot, $event->getReplyToken(), '入室済みです。');
       }
     }
+    // 退室の確認ダイアログ
+    else if(substr($event->getText(), 4) == 'leave_confirm') {
+      replyConfirmTemplate($bot, $event->getReplyToken(), '本当に退出しますか？', '本当に退出しますか？',
+        new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('はい', 'cmd_leave'),
+        new LINe\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancecl'));
+    }
+    // 退室
+    else if(substr($event->getText(), 4) == 'leave') {
+      if(getRoomIdOfUser($event->getUserId()) !== PDO::PARAM_NULL) {
+        leaveRoom($event->getUserId());
+        replyTextMessage($bot, $event->getReplyToken(), '退室しました');
+      } else {
+        replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません');
+      }
+    }
     continue;
   }
   // リッチコンテンツ以外の時(ルームIDが入力されたとき)
