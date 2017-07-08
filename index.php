@@ -76,9 +76,20 @@ foreach ($events as $event) {
     else if(substr($event->getText(), 4) == 'leave') {
       if(getRoomIdOfUser($event->getUserId()) !== PDO::PARAM_NULL) {
         leaveRoom($event->getUserId());
-        replyTextMessage($bot, $event->getReplyToken(), '退室しました');
+        replyTextMessage($bot, $event->getReplyToken(), '退室しました。');
       } else {
-        replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません');
+        replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません。');
+      }
+    }
+    // ルームでのビンゴをスタート
+    else if(substr($event->getText(), 4) == 'start') {
+      if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
+        replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません。');
+      } else if(getSheetOfUser($event->getUserId()) !== PDO::PARAM_NULL) {
+        replyTextMessage($bot, $event->getReplyToken(), 'すでに配布されています。');
+      } else {
+        // シートを準備
+        prepareSheets($bot, $event->getUserId());
       }
     }
     continue;
