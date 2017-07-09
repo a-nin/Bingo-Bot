@@ -128,7 +128,7 @@ function createRoomAndGetRoomId($userId) {
   $sql = 'insert into ' . TABLE_NAME_SHEETS . ' (userid, sheet, roomid) values (pgp_sym_encrypt(?, \'' . getenv('DB_ENCRYPT_PASS') . '\'), ?, ?) ';
   $sth = $dbh->prepare($sql);
   $sth->execute(array($userId, PDO::PARAM_NULL, $roomId));
-  return roomId;
+  return $roomId;
 }
 
 // 入室しルームIDを返す
