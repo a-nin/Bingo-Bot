@@ -70,7 +70,7 @@ foreach ($events as $event) {
     else if(substr($event->getText(), 4) == 'leave_confirm') {
       replyConfirmTemplate($bot, $event->getReplyToken(), '本当に退出しますか？', '本当に退出しますか？',
         new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('はい', 'cmd_leave'),
-        new LINe\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancecl'));
+        new LINE\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancecl'));
     }
     // 退室
     else if(substr($event->getText(), 4) == 'leave') {
