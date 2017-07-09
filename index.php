@@ -144,12 +144,56 @@ function enterRoomAndGetRoomId($userId, $roomId) {
     return $row['roomid'];
   }
 }
-
+// 退室
 function leaveRoom($userId) {
   $dbh = dbConnection::getConnection();
   $sql = 'delete FROM' . TABLE_NAME_SHEETS . ' where ? = pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\')';
   $sth = $dbh->prepare($sql);
   $sth->execute(array($userId));
+}
+
+// ユーザーIDからシートを取得
+function getSheetOfUser($userId) {
+  $dbh = dbConnection::getConnection();
+  $sql = 'select sheet from ' . TABLE_NAME_SHEETS . ' where ? = pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\')';
+  $sth = $dbh->prepare($sql);
+  $sth->execute(array($userId));
+  if (!($row = $sth->fetch())) {
+    return PDO::PARAM_NULL;
+  } else {
+    return json_decode($row["sheet"]);
+  }
+}
+
+// 各ユーザーにシートを割り当て
+function prepareSheets($bot, $userId) {
+  $dbh = dbConnection::getConnection();
+  $sql = 'select pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\') as userid from ' . TABLE_NAME_SHEETS . ' where roomid = ?';
+  $sth = $dbh->prepare($sql);
+  $sth->execute(array(getRoomIdOfUser($userId)));
+  foreach ($sth->fetchAll() as $row) {
+    $sheetArray = array();
+    for($i = 0; $i < 5; $i++) {
+      // 各列範囲内でランダム
+      $numArray = range(($i * 15) + 1, ($i * 15) + 1 + 14);
+      // シャッフル
+      shuffle($numArray);
+      // 5番目までの要素を追加
+      array_push($sheetArray, array_slice($numArray, 0, 5));
+    }
+    // 中央マスは0
+    $sheetArray[2][2] = 0;
+    // アップデート
+    updateUserSheet($row['userid'], $sheetArray);
+  }
+}
+
+// ユーザーのシートをアップデート
+function updateUserSheet($userId, $sheet) {
+  $dbh = dbConnection::getConnection();
+  $sql = 'update ' . TABLE_NAME_SHEETS . ' set sheet = ? where ? = pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\')';
+  $sth = $dbh->prepare($sql);
+  $sth->execute(array(json_encode($sheet), $userId));
 }
 
 // テキストを返信。引数はLINEBot、返信先、テキスト
