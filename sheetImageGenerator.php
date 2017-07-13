@@ -32,5 +32,6 @@ for($i = 0; $i < count($sheet); $i++) {
 }
 
 // リクエストされているサイズを取得
+$size = $_REQUEST['size'];
 
  ?>
