@@ -63,7 +63,7 @@ foreach ($events as $event) {
     else if(substr($event->getText(), 4) == 'enter') {
       // ユーザーが未入室の時
       if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
-        replyTextMessage($bot, $event->getReplyToken(), 'ルームIDを入力してください。')
+        replyTextMessage($bot, $event->getReplyToken(), 'ルームIDを入力してください。');
       } else {
         replyTextMessage($bot, $event->getReplyToken(), '入室済みです。');
       }
