@@ -98,10 +98,15 @@ foreach ($events as $event) {
     // ビンゴのボールを一個引く
     else if(substr($event->getText(), 4) == 'proceed') {
       if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
-        replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません');
+        replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません。');
       } else {
         // ユーザーがそのルームでビンゴを開始したユーザーでない場合
-        
+        if(getHostOfRoom(getRoomIdOfUser($event->getUserId())) != $event->getUserId()) {
+          replyTextMessage($bot, $event->getReplyToken(), '進行が出来るのはゲームを開始したユーザーのみです。');
+        } else {
+          // ボールを引く
+          proceedBingo($bot, $event->getUserId());
+        }
       }
     }
     continue;
