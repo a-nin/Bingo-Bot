@@ -95,6 +95,15 @@ foreach ($events as $event) {
         prepareSheets($bot, $event->getUserId());
       }
     }
+    // ビンゴのボールを一個引く
+    else if(substr($event->getText(), 4) == 'proceed') {
+      if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
+        replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません');
+      } else {
+        // ユーザーがそのルームでビンゴを開始したユーザーでない場合
+        
+      }
+    }
     continue;
   }
   // リッチコンテンツ以外の時(ルームIDが入力されたとき)
