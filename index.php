@@ -145,6 +145,11 @@ function createRoomAndGetRoomId($userId) {
   $sql = 'insert into ' . TABLE_NAME_SHEETS . ' (userid, sheet, roomid) values (pgp_sym_encrypt(?, \'' . getenv('DB_ENCRYPT_PASS') . '\'), ?, ?) ';
   $sth = $dbh->prepare($sql);
   $sth->execute(array($userId, PDO::PARAM_NULL, $roomId));
+  $sqlInsertRoom = 'insert into ' . TABLE_NAME_ROOMS . ' (roomid, balls, userid) values (?, ?, pgp_sym_encrypt(?, \'' . getenv('DB_ENCRYPT_PASS') . '\'))';
+  $sthInsertRoom = $dbh->prepare($sqlInsertRoom);
+  // 0は中心のマスを示す。最初からあいている
+  $sthInsertRoom->execute(array($roomId, json_encode([0]), $userId));
+
   return $roomId;
 }
 
