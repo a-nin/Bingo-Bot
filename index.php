@@ -227,6 +227,64 @@ function pushSeetToUser($bot, $userId, $text) {
   $sth = $dbh->prepare($sql);
   array_push($actionArray, new LINE\LINEBot\ImagemapActionBuilder\ImagemapMessageActionBuilder('-', new LINE\LINEBot\ImagemapActionBuilder\AreaBuilder(0, 0, 1, 1)));
 
+// ビンゴを開始したユーザーのユーザーIDを取得
+function getHostOfRoom($roomId) {
+  $dbh = dbConnection::getConnection();
+  $sql = 'select pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\') as userid from ' . TABLE_NAME_ROOMS . ' where roomid = ?';
+  $sth = $dbh->prepare($sql);
+  $sth->execute(array($roomId));
+  if (!($row = $sth->fetch())) {
+    return PDO::PARAM_NULL;
+  } else {
+    return $row['userid'];
+  }
+}
+
+// ボールを引く
+function proceedBingo($bot, $userId) {
+  $roomId = getRoomIdOfUser($userId);
+
+  $dbh = dbConnection::getConnection();
+  $sql = 'select balls from ' . TABLE_NAME_ROOMS . ' where roomid = ?';
+  $sth = $dbh->prepare($sql);
+  $sth->execute(array($roomId));
+  if ($row = $sth->fetch()) {
+    $ballArray = json_decode($row['balls']);
+    // ボールがすべて引かれている時
+    if(count($ballArray) == 75) {
+      $bot->pushMessage($userId, new \LINE\LINEBot\MessageBuilder\TextMessageBuilder('もうボールはありません。'));
+      return;
+    }
+    // 重複しないボールが出るまで引く
+    $newBall = 0;
+    do {
+      $newBall = rand(1, 75);
+    } while(in_array($newBall, $ballArray));
+    array_push($ballArray, $newBall);
+
+    // ルームのボール情報をアップデート
+    $sqlUpdateBall = 'update ' . TABLE_NAME_ROOMS . ' set balls = ? where roomid = ?';
+    $sthUpdateBall = $dbh->prepare($sqlUpdateBall);
+    $sthUpdateBall->execute(array(json_encode($ballArray), $roomId));
+
+    // すべてのユーザーに送信
+    pushSeetToUser($bot, $userId, $newBall);
+  }
+}
+
+// ルームのボール情報を取得
+function getBallOfRoom($roomId) {
+  $dbh = dbConnection::getConnection();
+  $sql = 'select balls from ' . TABLE_NAME_ROOMS . ' where roomid = ?';
+  $sth = $dbh->prepare($sql);
+  $sth->execute(array($roomId));
+  if (!($row = $sth->fetch())) {
+    return PDO::PARAM_NULL;
+  } else {
+    return json_decode($row['balls']);
+  }
+}
+
   // ユーザー一人ずつ処理
   foreach ($sth->fetchAll() as $row) {
     $imagemapMessageBuilder = new LINE\LINEBot\MessageBuilder\imagemapMessageBuilder('https://' . $_SERVER['HTTP_HOST'] . '/sheet/' . urlencode($row['sheet']) . '/' . urlencode(json_encode([0])) . '/' . uniqid(), 'シート', new LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder(1040, 1040), $actionArray);
