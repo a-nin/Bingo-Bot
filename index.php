@@ -225,7 +225,26 @@ function pushSeetToUser($bot, $userId, $text) {
   $dbh = dbConnection::getConnection();
   $sql = 'select pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\') as userid, sheet from ' . TABLE_NAME_SHEETS . ' where roomid = ?';
   $sth = $dbh->prepare($sql);
+  $sth->execute(array($getRoomIdOfUser($userId)));
+
+  $actionArray = array();
   array_push($actionArray, new LINE\LINEBot\ImagemapActionBuilder\ImagemapMessageActionBuilder('-', new LINE\LINEBot\ImagemapActionBuilder\AreaBuilder(0, 0, 1, 1)));
+
+  // ユーザー一人ずつ処理
+  foreach ($sth->fetchAll() as $row) {
+    $imagemapMessageBuilder = new LINE\LINEBot\MessageBuilder\imagemapMessageBuilder('https://' . $_SERVER['HTTP_HOST'] . '/sheet/' . urlencode($row['sheet']) . '/' . urlencode(json_encode(getBallOfRoom(getRoomIdOfUser($userId)))) . '/' . uniqid(), 'シート', new LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder(1040, 1040), $actionArray);
+    $builder = new \LINE\LINEBot\MessageBuilder\MultiMessageBuilder();
+    $builder->add(new \LINE\LINEBot\MessageBuilder\TextMessageBuilder($text));
+    $builder->add($imagemapMessageBuilder);
+    // ビンゴが成立している場合
+    if(getIsUserHasBingo($row["userid"])) {
+      // スタンプとテキストを追加
+      $builder->add(new \LINE\LINEBot\MessageBuilder\StickerMessageBuilder(1, 134));
+      $builder->add(new \LINE\LINEBot\MessageBuilder\TextMessageBuilder('ビンゴだよ！名乗り出て景品をもらってね！'));
+    }
+    $bot->pushMessage($row['userid'], $builder);
+  }
+}
 
 // ビンゴを開始したユーザーのユーザーIDを取得
 function getHostOfRoom($roomId) {
@@ -285,14 +304,33 @@ function getBallOfRoom($roomId) {
   }
 }
 
-  // ユーザー一人ずつ処理
-  foreach ($sth->fetchAll() as $row) {
-    $imagemapMessageBuilder = new LINE\LINEBot\MessageBuilder\imagemapMessageBuilder('https://' . $_SERVER['HTTP_HOST'] . '/sheet/' . urlencode($row['sheet']) . '/' . urlencode(json_encode([0])) . '/' . uniqid(), 'シート', new LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder(1040, 1040), $actionArray);
-    $builder = new \LINE\LINEBot\MessageBuilder\MultiMessageBuilder();
-    $builder->add(new \LINE\LINEBot\MessageBuilder\TextMessageBuilder($text));
-    $builder->add($imagemapMessageBuilder);
-    $bot->pushMessage($row['userid'], $builder);
+// ユーザーのシートがビンゴ成立しているかを調べる
+function getIsUserHasBingo($userId) {
+  $roomId = getRoomIdOfUser($userId);
+  $balls = getBallOfRoom($roomId);
+  $sheet = getSheetOfUser($userId);
+
+  // すでに引かれているボールに一致すれば-1を代入
+  foreach($sheet as &$col) {
+    foreach($col as &$num) {
+      if(in_array($num, $balls)) {
+        $num = -1;
+      }
+    }
   }
+
+  for($i = 0; $i < 5; $i++) {
+    // 縦か横の5マスの合計が-5ならビンゴ
+    if(array_sum($sheet[$i]) == -5 || $sheet[0][$i] + $sheet[1][$i] + $sheet[2][$i] + $sheet[3][$i] + $sheet[4][$i] == -5) {
+      return true;
+    }
+  }
+  // 斜めの合計が-5ならビンゴ
+  if($sheet[0][0] + $sheet[1][1] + $sheet[2][2] + $sheet[3][3] + $sheet[4][4] == -5 || $sheet[0][4] + $sheet[1][3] + $sheet[2][2] + $sheet[3][1] + $sheet[4][0] == -5) {
+    return true;
+  }
+
+  return false;
 }
 
 // テキストを返信。引数はLINEBot、返信先、テキスト
