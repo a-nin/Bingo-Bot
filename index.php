@@ -73,7 +73,7 @@ foreach ($events as $event) {
     else if(substr($event->getText(), 4) == 'leave_confirm') {
       replyConfirmTemplate($bot, $event->getReplyToken(), '本当に退出しますか？', '本当に退出しますか？',
         new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('はい', 'cmd_leave'),
-        new LINE\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancecl'));
+        new LINE\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancel'));
     }
     // 退室
     else if(substr($event->getText(), 4) == 'leave') {
@@ -108,6 +108,22 @@ foreach ($events as $event) {
           proceedBingo($bot, $event->getUserId());
         }
       }
+    }
+    // ビンゴを終了確認ダイアログ
+    else if(substr($event->getText(), 4) == 'end_confirm') {
+      if(getRoomIdOfUser($event->getUserId()) == PDO::PARAM_NULL) {
+        replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません。');
+      } else {
+        if(getHostOfRoom(getRoomIdOfUser($event->getUserId())) != $event->getUserId()) {
+          replyTextMessage($bot, $event->getReplyToken(), '終了ができるのはゲームを開始したユーザーのみです。');
+        } else {
+          replyConfirmTemplate($bot, $event->getReplyToken(), '本当に終了しますか？データはすべて失われます。', '本当に終了しますか？データはすべて失われます。', new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('はい', 'cmd_end'), new LINE\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancel'));
+        }
+      }
+    }
+    // 終了
+    else if(substr($event->getText(), 4) == 'end') {
+      endBingo($bot, $event->getUserId());
     }
     continue;
   }
@@ -331,6 +347,30 @@ function getIsUserHasBingo($userId) {
   }
 
   return false;
+}
+
+// ビンゴの終了
+function endBingo($bot, $userId) {
+  $roomId = getRoomIdOfUser($userId);
+
+  $dbh = dbConnection::getConnection();
+  $sql = 'select pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\') as userid, sheet from ' . TABLE_NAME_SHEETS . ' where roomid = ?';
+  $sth = $dbh->prepare($sql);
+  $sth->execute(array(getRoomIdOfUser($userId)));
+  // 各ユーザーにメッセージを送信
+  foreach ($sth->fetchAll() as $row) {
+    $bot->pushMessage($row['userid'], new \LINE\LINEBot\MessageBuilder\TextMessageBuilder('ビンゴ終了。退室しました。'));
+  }
+
+  // ユーザーを削除
+  $sqlDeleteUser = 'delete FROM ' . TABLE_NAME_SHEETS . ' where roomid = ?';
+  $sthDeleteUser = $dbh->prepare($sqlDeleteUser);
+  $sthDeleteUser->execute(array($roomId));
+
+  // ルームを削除
+  $sqlDeleteRoom = 'delete FROM ' . TABLE_NAME_ROOMS . ' where roomid = ?';
+  $sthDeleteRoom = $dbh->prepare($sqlDeleteRoom);
+  $sthDeleteRoom->execute(array($roomId));
 }
 
 // テキストを返信。引数はLINEBot、返信先、テキスト
