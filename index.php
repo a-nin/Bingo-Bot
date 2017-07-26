@@ -100,7 +100,8 @@ foreach ($events as $event) {
       if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
         replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません。');
       } else if(getSheetOfUser($event->getUserId()) === PDO::PARAM_NULL) {
-        replyTextMessage($bot, $event->getReplyToken(), 'シートが配布されていません。まずビンゴ開始を押してください。')
+        replyTextMessage($bot, $event->getReplyToken(), 'シートが配布されていません。まずビンゴ開始を押してください。');
+      } else {
         // ユーザーがそのルームでビンゴを開始したユーザーでない場合
         if(getHostOfRoom(getRoomIdOfUser($event->getUserId())) != $event->getUserId()) {
           replyTextMessage($bot, $event->getReplyToken(), '進行が出来るのはゲームを開始したユーザーのみです。');
