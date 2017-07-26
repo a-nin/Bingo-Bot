@@ -248,7 +248,7 @@ function pushSeetToUser($bot, $userId, $text) {
 
   // ユーザー一人ずつ処理
   foreach ($sth->fetchAll() as $row) {
-    $imagemapMessageBuilder = new LINE\LINEBot\MessageBuilder\imagemapMessageBuilder('https://' . $_SERVER['HTTP_HOST'] . '/sheet/' . urlencode($row['sheet']) . '/' . urlencode(json_encode(getBallOfRoom(getRoomIdOfUser($userId)))) . '/' . uniqid(), 'シート', new LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder(1040, 1040), $actionArray);
+    $imagemapMessageBuilder = new LINE\LINEBot\MessageBuilder\imagemapMessageBuilder('https://' . $_SERVER['HTTP_HOST'] . '/sheet/' . urlencode($row['sheet']) . '/' . urlencode(json_encode(getBallsOfRoom(getRoomIdOfUser($userId)))) . '/' . uniqid(), 'シート', new LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder(1040, 1040), $actionArray);
     $builder = new \LINE\LINEBot\MessageBuilder\MultiMessageBuilder();
     $builder->add(new \LINE\LINEBot\MessageBuilder\TextMessageBuilder($text));
     $builder->add($imagemapMessageBuilder);
@@ -308,7 +308,7 @@ function proceedBingo($bot, $userId) {
 }
 
 // ルームのボール情報を取得
-function getBallOfRoom($roomId) {
+function getBallsOfRoom($roomId) {
   $dbh = dbConnection::getConnection();
   $sql = 'select balls from ' . TABLE_NAME_ROOMS . ' where roomid = ?';
   $sth = $dbh->prepare($sql);
@@ -323,7 +323,7 @@ function getBallOfRoom($roomId) {
 // ユーザーのシートがビンゴ成立しているかを調べる
 function getIsUserHasBingo($userId) {
   $roomId = getRoomIdOfUser($userId);
-  $balls = getBallOfRoom($roomId);
+  $balls = getBallsOfRoom($roomId);
   $sheet = getSheetOfUser($userId);
 
   // すでに引かれているボールに一致すれば-1を代入
