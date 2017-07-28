@@ -8,10 +8,8 @@ define('TABLE_NAME_ROOMS', 'rooms');
 
 // アクセストークンを使いCurlHTTPClientをインスタンス化
 $httpClient = new \LINE\LINEBot\HTTPClient\CurlHTTPClient(getenv('CHANNEL_ACCESS_TOKEN'));
-
 // CurlHTTPClientとシークレットを使いLINEBotをインスタンス化
 $bot = new \LINE\LINEBot($httpClient, ['channelSecret' => getenv('CHANNEL_SECRET')]);
-
 // LINE Messaging APIがリクエストに付与した署名を取得
 $signature = $_SERVER['HTTP_' . \LINE\LINEBot\Constant\HTTPHeader::LINE_SIGNATURE];
 
@@ -51,12 +49,14 @@ foreach ($events as $event) {
         // ルームを作成し入室後ルームIDを取得
         $roomId = createRoomAndGetRoomId($event->getUserId());
         // ルームIDをユーザーに返信
-        replyMultiMessage($bot, $event->getReplyToken(),
+        replyMultiMessage($bot,
+          $event->getReplyToken(),
           new \LINE\LINEBot\MessageBuilder\TextMessageBuilder('ルームを作成し、入室しました。ルームIDは'),
           new \LINE\LINEBot\MessageBuilder\TextMessageBuilder($roomId),
           new \LINE\LINEBot\MessageBuilder\TextMessageBuilder('です。'));
-      // すでに入室しているとき
-      } else {
+      }
+      // 既に入室している時
+      else {
         replyTextMessage($bot, $event->getReplyToken(), 'すでに入室済みです。');
       }
     }
@@ -89,7 +89,7 @@ foreach ($events as $event) {
       if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
         replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません。');
       } else if(getSheetOfUser($event->getUserId()) !== PDO::PARAM_NULL) {
-        replyTextMessage($bot, $event->getReplyToken(), 'すでに配布されています。');
+        replyTextMessage($bot, $event->getReplyToken(), '既に配布されています。');
       } else {
         // シートを準備
         prepareSheets($bot, $event->getUserId());
@@ -119,7 +119,9 @@ foreach ($events as $event) {
         if(getHostOfRoom(getRoomIdOfUser($event->getUserId())) != $event->getUserId()) {
           replyTextMessage($bot, $event->getReplyToken(), '終了ができるのはゲームを開始したユーザーのみです。');
         } else {
-          replyConfirmTemplate($bot, $event->getReplyToken(), '本当に終了しますか？データはすべて失われます。', '本当に終了しますか？データはすべて失われます。', new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('はい', 'cmd_end'), new LINE\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancel'));
+          replyConfirmTemplate($bot, $event->getReplyToken(), '本当に終了しますか？データはすべて失われます。', '本当に終了しますか？データはすべて失われます。',
+          new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('はい', 'cmd_end'),
+          new LINE\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancel'));
         }
       }
     }
@@ -129,14 +131,16 @@ foreach ($events as $event) {
     }
     continue;
   }
-  // リッチコンテンツ以外の時(ルームIDが入力されたとき)
+  // リッチコンテンツ以外の時(ルームIDが入力された時)
   if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
     // 入室
     $roomId = enterRoomAndGetRoomId($event->getUserId(), $event->getText());
     // 成功時
     if($roomId !== PDO::PARAM_NULL) {
       replyTextMessage($bot, $event->getReplyToken(), "ルームID" . $roomId . "に入室しました。");
-    } else {
+    }
+    // 失敗時
+    else {
       replyTextMessage($bot, $event->getReplyToken(), "そのルームIDは存在しません");
     }
   }
