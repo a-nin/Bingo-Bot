@@ -32,7 +32,7 @@ if(file_exists('./tmp/' . $sheetName)) {
 else {
   // 空のシート画像を生成
   $destinationImage = imagecreatefrompng('imgs/bingo_bg.png');
-  for($i = 0; $i < count($col); $i++) {
+  for($i = 0; $i < count($sheet); $i++) {
     $col = $sheet[$i];
     for($j = 0; $j < count($col); $j++) {
       // 数字を合成。中央は何もしない
@@ -44,13 +44,13 @@ else {
       }
       // 数字とボールの配列を比較し穴を合成
       if(in_array($col[$j], $balls)) {
-        $holeImage - imagecreatefrompng('imgs/hole.png');
+        $holeImage = imagecreatefrompng('imgs/hole.png');
         imagecopy($destinationImage, $holeImage, 15 + (int)($i * 134), 116 + (int)($j * 114), 0, 0, 134, 114);
         imagedestroy($holeImage);
       }
     }
   }
-  // 画像の保存先フォルダを定義
+  // 画像の保存先フォルダを定義。レスポンス改良の為フォルダに分配
   $directory_path = './tmp/' . $stoneCount;
   // フォルダが存在しない時
   if(!file_exists($directory_path)) {
