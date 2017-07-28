@@ -73,7 +73,7 @@ foreach ($events as $event) {
     else if(substr($event->getText(), 4) == 'leave_confirm') {
       replyConfirmTemplate($bot, $event->getReplyToken(), '本当に退出しますか？', '本当に退出しますか？',
         new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('はい', 'cmd_leave'),
-        new LINE\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancel'));
+        new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('いいえ', 'cmd_cancel'));
     }
     // 退室
     else if(substr($event->getText(), 4) == 'leave') {
@@ -121,9 +121,13 @@ foreach ($events as $event) {
         } else {
           replyConfirmTemplate($bot, $event->getReplyToken(), '本当に終了しますか？データはすべて失われます。', '本当に終了しますか？データはすべて失われます。',
           new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('はい', 'cmd_end'),
-          new LINE\LINEBot\TemplateActionBuilder\PostbackTemplateActionBuilder('いいえ', 'cancel'));
+          new LINE\LINEBot\TemplateActionBuilder\MessageTemplateActionBuilder('いいえ', 'cmd_cancel'));
         }
       }
+    }
+    // キャンセルする
+    else if(substr($event->getText(), 4) == 'cancel') {
+      replyTextMessage($bot, $event->getReplyToken(), 'キャンセルしました。');
     }
     // 終了
     else if(substr($event->getText(), 4) == 'end') {
