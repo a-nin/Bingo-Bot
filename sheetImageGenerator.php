@@ -52,7 +52,7 @@ if(file_exists('./tmp/' . $sheetName)) {
   // 画像の保存先フォルダを定義
   $directory_path = './tmp/';
   // フォルダが存在しない時
-  if(!file_exsists($directory_path)) {
+  if(!file_exists($directory_path)) {
     // フォルダを作成
     if(mkdir($directory_path, 0777, true)) {
       // 権限を変更
