@@ -13,7 +13,7 @@ $balls = json_decode(urldecode($_REQUEST['balls']));
 // 数字が合成済みの画像の名前
 $sheetName = json_encode($sheet) . '.png';
 // 保存されていれば
-if(file_exsists('./tmp/' . $sheetName)) {
+if(file_exists('./tmp/' . $sheetName)) {
   // 保存された画像を合成のベースに変更
   $destinationImage = imagecreatefrompng('./tmp/' . $sheetName);
   // 数字とボールの配列を比較し穴を合成
