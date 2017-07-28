@@ -192,7 +192,7 @@ function enterRoomAndGetRoomId($userId, $roomId) {
 // 退室
 function leaveRoom($userId) {
   $dbh = dbConnection::getConnection();
-  $sql = 'delete FROM' . TABLE_NAME_SHEETS . ' where ? = pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\')';
+  $sql = 'delete FROM ' . TABLE_NAME_SHEETS . ' where ? = pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\')';
   $sth = $dbh->prepare($sql);
   $sth->execute(array($userId));
 }
