@@ -27,8 +27,9 @@ if(file_exists('./tmp/' . $sheetName)) {
       }
     }
   }
+}
 // 保存されていなければ
-} else {
+else {
   // 空のシート画像を生成
   $destinationImage = imagecreatefrompng('imgs/bingo_bg.png');
   for($i = 0; $i < count($col); $i++) {
@@ -50,7 +51,7 @@ if(file_exists('./tmp/' . $sheetName)) {
     }
   }
   // 画像の保存先フォルダを定義
-  $directory_path = './tmp/';
+  $directory_path = './tmp/' . $stoneCount;
   // フォルダが存在しない時
   if(!file_exists($directory_path)) {
     // フォルダを作成
@@ -68,8 +69,9 @@ $size = $_REQUEST['size'];
 // ベースサイズと同じなら何もしない
 if($size == GD_BASE_SIZE) {
   $out = $destinationImage;
+}
 // 違うサイズの場合
-} else {
+else {
   // リクエストされたサイズの空の画像を生成
   $out = imagecreatetruecolor($size, $size);
   // リサイズしながら合成
