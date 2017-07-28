@@ -167,6 +167,7 @@ function createRoomAndGetRoomId($userId) {
   $sql = 'insert into ' . TABLE_NAME_SHEETS . ' (userid, sheet, roomid) values (pgp_sym_encrypt(?, \'' . getenv('DB_ENCRYPT_PASS') . '\'), ?, ?) ';
   $sth = $dbh->prepare($sql);
   $sth->execute(array($userId, PDO::PARAM_NULL, $roomId));
+
   $sqlInsertRoom = 'insert into ' . TABLE_NAME_ROOMS . ' (roomid, balls, userid) values (?, ?, pgp_sym_encrypt(?, \'' . getenv('DB_ENCRYPT_PASS') . '\'))';
   $sthInsertRoom = $dbh->prepare($sqlInsertRoom);
   // 0は中心のマスを示す。最初からあいている
@@ -178,8 +179,7 @@ function createRoomAndGetRoomId($userId) {
 // 入室しルームIDを返す
 function enterRoomAndGetRoomId($userId, $roomId) {
   $dbh = dbConnection::getConnection();
-  $sql = 'insert into ' . TABLE_NAME_SHEETS . ' (userid, sheet, roomid) SELECT pgp_sym_encrypt(?, \'' . getenv('DB_ENCRYPT_PASS') . '\'), ?, ? where exists(
-    select roomid from ' . TABLE_NAME_SHEETS . ' where roomid = ?) returning roomid';
+  $sql = 'insert into ' . TABLE_NAME_SHEETS . ' (userid, sheet, roomid) SELECT pgp_sym_encrypt(?, \'' . getenv('DB_ENCRYPT_PASS') . '\'), ?, ? where exists(select roomid from ' . TABLE_NAME_SHEETS . ' where roomid = ?) returning roomid';
   $sth = $dbh->prepare($sql);
   $sth->execute(array($userId, PDO::PARAM_NULL, $roomId, $roomId));
   if (!($row = $sth->fetch())) {
@@ -188,6 +188,7 @@ function enterRoomAndGetRoomId($userId, $roomId) {
     return $row['roomid'];
   }
 }
+
 // 退室
 function leaveRoom($userId) {
   $dbh = dbConnection::getConnection();
@@ -202,6 +203,7 @@ function getSheetOfUser($userId) {
   $sql = 'select sheet from ' . TABLE_NAME_SHEETS . ' where ? = pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\')';
   $sth = $dbh->prepare($sql);
   $sth->execute(array($userId));
+
   if (!($row = $sth->fetch())) {
     return PDO::PARAM_NULL;
   } else {
@@ -222,7 +224,7 @@ function prepareSheets($bot, $userId) {
       $numArray = range(($i * 15) + 1, ($i * 15) + 1 + 14);
       // シャッフル
       shuffle($numArray);
-      // 5番目までの要素を追加
+      // 5番目迄の要素を追加
       array_push($sheetArray, array_slice($numArray, 0, 5));
     }
     // 中央マスは0
@@ -230,7 +232,7 @@ function prepareSheets($bot, $userId) {
     // アップデート
     updateUserSheet($row['userid'], $sheetArray);
   }
-  // すべてのユーザーにシートのImagemapを送信
+  // 全てのユーザーにシートのImagemapを送信
   pushSeetToUser($bot, $userId, 'ビンゴ開始！');
 }
 
@@ -247,14 +249,21 @@ function pushSeetToUser($bot, $userId, $text) {
   $dbh = dbConnection::getConnection();
   $sql = 'select pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\') as userid, sheet from ' . TABLE_NAME_SHEETS . ' where roomid = ?';
   $sth = $dbh->prepare($sql);
-  $sth->execute(array($getRoomIdOfUser($userId)));
+  $sth->execute(array(getRoomIdOfUser($userId)));
 
   $actionArray = array();
-  array_push($actionArray, new LINE\LINEBot\ImagemapActionBuilder\ImagemapMessageActionBuilder('-', new LINE\LINEBot\ImagemapActionBuilder\AreaBuilder(0, 0, 1, 1)));
+  array_push($actionArray, new LINE\LINEBot\ImagemapActionBuilder\ImagemapMessageActionBuilder(
+    '-',
+    new LINE\LINEBot\ImagemapActionBuilder\AreaBuilder(0, 0, 1, 1)));
 
-  // ユーザー一人ずつ処理
+  // ユーザーひとりずつ処理
   foreach ($sth->fetchAll() as $row) {
-    $imagemapMessageBuilder = new LINE\LINEBot\MessageBuilder\imagemapMessageBuilder('https://' . $_SERVER['HTTP_HOST'] . '/sheet/' . urlencode($row['sheet']) . '/' . urlencode(json_encode(getBallsOfRoom(getRoomIdOfUser($userId)))) . '/' . uniqid(), 'シート', new LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder(1040, 1040), $actionArray);
+    $imagemapMessageBuilder = new \LINE\LINEBot\MessageBuilder\ImagemapMessageBuilder(
+      'https://' . $_SERVER['HTTP_HOST'] . '/sheet/' . urlencode($row['sheet']) . '/' . urlencode(json_encode(getBallsOfRoom(getRoomIdOfUser($userId)))) . '/' . uniqid(),
+      'シート',
+      new LINE\LINEBot\MessageBuilder\Imagemap\BaseSizeBuilder(1040, 1040),
+      $actionArray
+     );
     $builder = new \LINE\LINEBot\MessageBuilder\MultiMessageBuilder();
     $builder->add(new \LINE\LINEBot\MessageBuilder\TextMessageBuilder($text));
     $builder->add($imagemapMessageBuilder);
@@ -291,7 +300,7 @@ function proceedBingo($bot, $userId) {
   $sth->execute(array($roomId));
   if ($row = $sth->fetch()) {
     $ballArray = json_decode($row['balls']);
-    // ボールがすべて引かれている時
+    // ボールが全て引かれている時
     if(count($ballArray) == 75) {
       $bot->pushMessage($userId, new \LINE\LINEBot\MessageBuilder\TextMessageBuilder('もうボールはありません。'));
       return;
@@ -308,7 +317,7 @@ function proceedBingo($bot, $userId) {
     $sthUpdateBall = $dbh->prepare($sqlUpdateBall);
     $sthUpdateBall->execute(array(json_encode($ballArray), $roomId));
 
-    // すべてのユーザーに送信
+    // 全てのユーザーに送信
     pushSeetToUser($bot, $userId, $newBall);
   }
 }
@@ -343,12 +352,14 @@ function getIsUserHasBingo($userId) {
 
   for($i = 0; $i < 5; $i++) {
     // 縦か横の5マスの合計が-5ならビンゴ
-    if(array_sum($sheet[$i]) == -5 || $sheet[0][$i] + $sheet[1][$i] + $sheet[2][$i] + $sheet[3][$i] + $sheet[4][$i] == -5) {
+    if(array_sum($sheet[$i]) == -5 ||
+    $sheet[0][$i] + $sheet[1][$i] + $sheet[2][$i] + $sheet[3][$i] + $sheet[4][$i] == -5) {
       return true;
     }
   }
   // 斜めの合計が-5ならビンゴ
-  if($sheet[0][0] + $sheet[1][1] + $sheet[2][2] + $sheet[3][3] + $sheet[4][4] == -5 || $sheet[0][4] + $sheet[1][3] + $sheet[2][2] + $sheet[3][1] + $sheet[4][0] == -5) {
+  if($sheet[0][0] + $sheet[1][1] + $sheet[2][2] + $sheet[3][3] + $sheet[4][4] == -5 ||
+    $sheet[0][4] + $sheet[1][3] + $sheet[2][2] + $sheet[3][1] + $sheet[4][0] == -5) {
     return true;
   }
 
