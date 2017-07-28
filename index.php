@@ -88,7 +88,7 @@ foreach ($events as $event) {
     else if(substr($event->getText(), 4) == 'start') {
       if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
         replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません。');
-      } else if(getSheetOfUser($event->getUserId()) !== PDO::PARAM_NULL) {
+      } else if(getSheetOfUser($event->getUserId()) != PDO::PARAM_NULL) {
         replyTextMessage($bot, $event->getReplyToken(), '既に配布されています。');
       } else {
         // シートを準備
@@ -113,7 +113,7 @@ foreach ($events as $event) {
     }
     // ビンゴを終了確認ダイアログ
     else if(substr($event->getText(), 4) == 'end_confirm') {
-      if(getRoomIdOfUser($event->getUserId()) == PDO::PARAM_NULL) {
+      if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
         replyTextMessage($bot, $event->getReplyToken(), 'ルームに入っていません。');
       } else {
         if(getHostOfRoom(getRoomIdOfUser($event->getUserId())) != $event->getUserId()) {
@@ -131,6 +131,7 @@ foreach ($events as $event) {
     }
     continue;
   }
+
   // リッチコンテンツ以外の時(ルームIDが入力された時)
   if(getRoomIdOfUser($event->getUserId()) === PDO::PARAM_NULL) {
     // 入室
@@ -144,11 +145,10 @@ foreach ($events as $event) {
       replyTextMessage($bot, $event->getReplyToken(), "そのルームIDは存在しません");
     }
   }
-
 }
 
 // ユーザーIDからルームIDを取得
-function getRoomIdOfUser($usrId) {
+function getRoomIdOfUser($userId) {
   $dbh = dbConnection::getConnection();
   $sql = 'select roomid from ' . TABLE_NAME_SHEETS . ' where ? = pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\')';
   $sth = $dbh->prepare($sql);
@@ -233,7 +233,7 @@ function prepareSheets($bot, $userId) {
     updateUserSheet($row['userid'], $sheetArray);
   }
   // 全てのユーザーにシートのImagemapを送信
-  pushSeetToUser($bot, $userId, 'ビンゴ開始！');
+  pushSheetToUser($bot, $userId, 'ビンゴ開始！');
 }
 
 // ユーザーのシートをアップデート
@@ -245,7 +245,7 @@ function updateUserSheet($userId, $sheet) {
 }
 
 // すべてのユーザーにシートのImagemapを送信
-function pushSeetToUser($bot, $userId, $text) {
+function pushSheetToUser($bot, $userId, $text) {
   $dbh = dbConnection::getConnection();
   $sql = 'select pgp_sym_decrypt(userid, \'' . getenv('DB_ENCRYPT_PASS') . '\') as userid, sheet from ' . TABLE_NAME_SHEETS . ' where roomid = ?';
   $sth = $dbh->prepare($sql);
@@ -318,7 +318,7 @@ function proceedBingo($bot, $userId) {
     $sthUpdateBall->execute(array(json_encode($ballArray), $roomId));
 
     // 全てのユーザーに送信
-    pushSeetToUser($bot, $userId, $newBall);
+    pushSheetToUser($bot, $userId, $newBall);
   }
 }
 
@@ -537,7 +537,7 @@ class dbConnection {
       // エラー時例外を投げるように設定
       self::$db->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
     }
-    catch (PDOExcepton $e) {
+    catch (PDOException $e) {
       echo 'Connection Error: ' . $e->getMessage();
     }
   }
